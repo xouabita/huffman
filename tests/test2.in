@@ -1,0 +1,7 @@
+<p>Huffmanův kód je princip komprese dat, který využívá statistických vlastností ukládaných dat.
+V typických souborech jsou různé hodnoty (např. znaky) zastoupeny s velmi nerovnoměrnou 
+četností. Například mezery jsou v typickém textu velmi časté, naopak znak ř bude málo
+frekventovaný. Huffmanův kód zpracuje analýzu četnosti výskytu jednotlivých znaků a podle
+četností přidělí jednotlivým znakům kódy. Kódy mají různou délku, typicky 1 až desítky bitů.
+Často se vyskytující znaky dostanou kódy kratší, málo časté znaky dostanou kódy delší. 
+To v důsledku vede k úspoře místa.</p>
