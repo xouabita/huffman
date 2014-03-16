@@ -71,24 +71,23 @@ class hTree {
     hNode * left, * right;
   };
   hNode * root;
-  void constructor (vector <unsigned int> vect, int &count, hNode * n) {
-    if (count < vect.size()) {
-      if (vect[count] == 0) {
-        n->leaf = false;
-        n->val  = 0;
-        n->left  = new hNode;
-        n->right = new hNode;
-        count++;
-        constructor (vect, count, n->left);
-        constructor (vect, count, n->right);
-      } else {
-        count++;
-        n->leaf = true;
-        n->val  = vect[count];
-        n->left = n->right = NULL;
-        count++;
-      }
+  hNode  * constructor (vector <unsigned int> vect, int * count) {
+    if (*count > vect.size()) { return NULL; }
+    hNode * n = new hNode;
+    if (vect[*count] == 0) {
+      n->val  = 0;
+      n->leaf = false;
+      *count = *count + 1;
+      n->left  = constructor(vect, count);
+      n->right = constructor(vect, count);
+    } else {
+      n->val  = vect[*count+1];
+      n->leaf = true;
+      n->left = n->right = NULL;
+      *count = *count+2;
     }
+
+    return n;
   }
 
   void destructor (hNode * n) {
@@ -114,8 +113,7 @@ class hTree {
 
   hTree (vector <unsigned int> vect) {
     int count = 0;
-    root = new hNode;
-    constructor (vect,count,root);
+    root = constructor (vect,&count);
   }
 
   ~hTree () {
@@ -133,6 +131,7 @@ class hTree {
         n = n->left;
       } else {
         n = n->right;
+        cout << n->leaf << endl;
       }
 
       if (n->leaf) {
@@ -156,7 +155,8 @@ class hTree {
         } else { break; }
       }
 
-      if (n->left == NULL || n->right == NULL) {
+      if (n == NULL || n->left == NULL || n->right == NULL) {
+        cout << "WTF!" << endl;
         throw -9;
       }
 
@@ -224,9 +224,8 @@ bool decompressFile ( const char * inFile, const char * outFile ) {
   bitReader inputBits (allFile, fsize);
 
   vector <unsigned int> huffTreeVect = extractBinTree(inputBits);
-
+  //for (int i=0; i < huffTreeVect.size(); i++) { cout<<huffTreeVect[i]<<" "; } cout<< endl<<endl;
   hTree * huffTree = new hTree (huffTreeVect);
-
   vector <unsigned char> out = huffTree->eval(inputBits);
   fwrite (&out[0], sizeof(unsigned char), out.size(), output);
   fclose(output);
