@@ -70,21 +70,31 @@ class hTree {
     bool leaf;
     hNode * left, * right;
   };
+
   hNode * root;
-  hNode  * constructor (vector <unsigned int> vect, int * count) {
-    if (*count > vect.size()) { return NULL; }
+
+  unsigned int readUTF8 (bitReader &file) {
+    if (file.readBit() == 0) { return file.readBits(7); }
+    else if (file.readBits(2) == 2) { return ( file.readBits(13) + UTF8_2); }
+    else if (file.readBit() == 0) { return ( file.readBits(20) + UTF8_3 ); }
+    else  { return (file.readBits(27) + UTF8_4); }
+  }
+
+  hNode * constructor (bitReader &file, bool nend) {
+    unsigned int aBit = file.readBit();
     hNode * n = new hNode;
-    if (vect[*count] == 0) {
-      n->val  = 0;
-      n->leaf = false;
-      *count = *count + 1;
-      n->left  = constructor(vect, count);
-      n->right = constructor(vect, count);
+    if (aBit == 0) {
+      n->val   = 0;
+      n->leaf  = false;
+      n->left  = constructor(file, nend);
+      if (nend) { n->right = constructor(file, nend); }
+      else { n->right = NULL; }
     } else {
-      n->val  = vect[*count+1];
-      n->leaf = true;
-      n->left = n->right = NULL;
-      *count = *count+2;
+      n->leaf  = true;
+      n->val   = readUTF8(file);
+      n->left  = NULL;
+      n->right = NULL;
+      if (n->val == UTF8_END) { nend = false; }
     }
 
     return n;
@@ -111,9 +121,9 @@ class hTree {
 
   public:
 
-  hTree (vector <unsigned int> vect) {
-    int count = 0;
-    root = constructor (vect,&count);
+  hTree (bitReader &file) {
+    bool nend = true;
+    root = constructor (file, nend);
   }
 
   ~hTree () {
@@ -176,27 +186,6 @@ class hTree {
   }
 };
 
-vector <unsigned int> extractBinTree (bitReader &file) {
-  unsigned int actualNb = file.readBit();
-  vector <unsigned int> res;
-  while (true) {
-    res.push_back(actualNb);
-    if (actualNb == 1) {
-      if (file.readBit() == 0) { res.push_back( file.readBits(7) ); }
-      else if (file.readBits(2) == 2) { res.push_back( file.readBits(13) + UTF8_2); }
-      else if (file.readBit() == 0) { res.push_back( file.readBits(20) + UTF8_3 );}
-      else if (file.readBit() == 0) {
-        actualNb = file.readBits(27) + UTF8_4;
-        res.push_back(actualNb);
-        if (actualNb == UTF8_END) { break; }
-      } else { throw UTF8_INVALID; }
-    }
-
-    actualNb = file.readBit();
-  }
-  return res;
-}
-
 bool compressFile ( const char * inFile, const char * outFile ) {
   return false;
 }
@@ -222,10 +211,10 @@ bool decompressFile ( const char * inFile, const char * outFile ) {
   fread(allFile, fsize, 1, input);
   fclose (input);
   bitReader inputBits (allFile, fsize);
+  hTree * huffTree = new hTree (inputBits);
 
-  vector <unsigned int> huffTreeVect = extractBinTree(inputBits);
-  //for (int i=0; i < huffTreeVect.size(); i++) { cout<<huffTreeVect[i]<<" "; } cout<< endl<<endl;
-  hTree * huffTree = new hTree (huffTreeVect);
+  huffTree->display();
+
   vector <unsigned char> out = huffTree->eval(inputBits);
   fwrite (&out[0], sizeof(unsigned char), out.size(), output);
   fclose(output);
