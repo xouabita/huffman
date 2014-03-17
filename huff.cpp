@@ -25,12 +25,13 @@ unsigned int pow2(unsigned int a) {
 
 class bitReader {
   unsigned char actualByte;
-  long counter;
   int cursor;
   unsigned char * file;
   long size;
 
   public:
+  int maBite;
+  long counter;
 
   bitReader (unsigned char _file[], long _size) {
     file = _file;
@@ -38,6 +39,7 @@ class bitReader {
     counter = 0;
     actualByte = file[0];
     cursor = CPT*2;
+    maBite = 0;
   }
 
   unsigned int readBit() {
@@ -48,6 +50,7 @@ class bitReader {
       if (counter < size) { actualByte = file[counter]; cursor = CPT; }
       else { throw EOF; }
     }
+    maBite++;
     return (actualByte & cursor) / cursor;
   }
 
@@ -77,7 +80,7 @@ class hTree {
     if (file.readBit() == 0) { return file.readBits(7); }
     else if (file.readBits(2) == 2) { return ( file.readBits(13) + UTF8_2); }
     else if (file.readBit() == 0) { return ( file.readBits(20) + UTF8_3 ); }
-    else  { return (file.readBits(27) + UTF8_4); }
+    else  { return (file.readBits(28) + UTF8_4); }
   }
 
   hNode * constructor (bitReader &file, bool nend) {
@@ -109,11 +112,9 @@ class hTree {
 
   void display (hNode * n) {
     cout << n->val << "|" << n->leaf << endl;
-    if (n->left) {
+    if (!n->leaf) {
       cout << "l : ";
       display(n->left);
-    }
-    if (n->right) {
       cout << "r : ";
       display(n->right);
     }
@@ -137,17 +138,18 @@ class hTree {
     vector <unsigned char> res;
 
     while (true) {
+      cout <<"["<<curs<<"]"<<endl;
       if (curs == 0) {
         n = n->left;
       } else {
         n = n->right;
-        cout << n->leaf << endl;
       }
 
       if (n->leaf) {
         if (n->val != UTF8_END) {
           unsigned int nVal = n->val;
-          if (nVal < 256) { res.push_back( (char) nVal ); }
+          cout << nVal << endl;
+          if (nVal < 256) { res.push_back( (char) nVal );}
           else if (nVal < 65536) {
             res.push_back( (char) (nVal/256) );
             res.push_back( (char) (nVal%256) );
@@ -212,8 +214,6 @@ bool decompressFile ( const char * inFile, const char * outFile ) {
   fclose (input);
   bitReader inputBits (allFile, fsize);
   hTree * huffTree = new hTree (inputBits);
-
-  huffTree->display();
 
   vector <unsigned char> out = huffTree->eval(inputBits);
   fwrite (&out[0], sizeof(unsigned char), out.size(), output);
