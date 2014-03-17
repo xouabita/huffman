@@ -1,5 +1,13 @@
 require 'fileutils'
 
+def del str
+  if File.exist?(str) then
+    if File.directory?(str) then FileUtils.rm_rf str
+    else FileUtils.rm str end
+  end
+end
+
+
 task :default => 'build'
 
 desc "Build the proj"
@@ -22,6 +30,7 @@ end
 
 desc "Clean the dir"
 task :clean do
-  if File.exist?('./huff.out') then FileUtils.rm './huff.out' end
-  if File.exist?('./results/') then FileUtils.rm_rf './results/' end
+  del 'results'
+  del 'test.res'
+  del 'huff.out'
 end
