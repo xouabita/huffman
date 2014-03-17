@@ -1,9 +1,9 @@
-Huffman
-=======
+Huffman Homework
+================
 
 Huffman homework for school
 
-## Build 
+## Build
 
 ```bash
   rake build
