@@ -2,5 +2,5 @@ results
 .DS_Store
 *.out
 *.res
-
+bits
 test.bin
