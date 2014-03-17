@@ -1,9 +1,12 @@
 require 'fileutils'
 
-def del str
-  if File.exist?(str) then
-    if File.directory?(str) then FileUtils.rm_rf str
-    else FileUtils.rm str end
+def del arr
+  if arr.is_a? String then arr = [arr] end
+  arr.each do |str|
+    if File.exist?(str) then
+      if File.directory?(str) then FileUtils.rm_rf str
+      else FileUtils.rm str end
+    end
   end
 end
 
@@ -31,6 +34,6 @@ end
 desc "Clean the dir"
 task :clean do
   del 'results'
-  del 'test.res'
+  del Dir.glob('test.*')
   del 'huff.out'
 end
