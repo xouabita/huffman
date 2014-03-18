@@ -20,15 +20,27 @@ end
 
 desc "Make the test"
 task :test => :build do
+  del 'results'
   FileUtils.mkdir 'results'
-  (0..5).each do |n|
-    input  = "./tests/test#{n}.huf"
-    output = "./results/test#{n}.in"
-    puts "Running test ##{n}"
-    sh "./huff.out #{input} #{output}"
-    dif_cmd = "diff ./tests/test#{n}.in #{output}"
-    puts(sh dif_cmd)
+  in_files = Dir.glob('tests/*.huf')
+  out_files = Dir.glob('tests/*.in')
+
+  in_files.each do |inp|
+    out = inp.sub('tests/','results/').sub('.huf','.in')
+    sh "./huff.out #{inp} #{out}"
   end
+
+  puts "--------------------"
+
+  res_files = Dir.glob('results/*.in')
+  res_files.each do |res|
+    out_files.each do |o|
+      if o.sub('tests/', "") == res.sub('results/', "") then
+        if (sh "diff #{o} #{res}") then puts 'OK!' end
+      end
+    end
+  end
+
 end
 
 desc "Clean the dir"
