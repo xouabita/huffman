@@ -145,37 +145,36 @@ class hTree {
     hNode * n = root;
     unsigned int curs = file.readBit();
     vector <unsigned char> res;
-
     while (true) {
+
       if (curs == 0) {
         n = n->left;
       } else {
         n = n->right;
       }
-
-      if (n->leaf) {
-        if (n->val != UTF8_END) {
-          unsigned int nVal = n->val;
-          if (nVal < 256) { res.push_back( (char) nVal );}
-          else if (nVal < 65536) {
-            res.push_back( (char) (nVal/256) );
-            res.push_back( (char) (nVal%256) );
-          } else if (nVal < 16777216) {
-            res.push_back( (char) (nVal/65536) );
-            res.push_back( (char) ( (nVal%65536)/256) );
-            res.push_back( (char) ( (nVal%65536)%256) );
-          } else {
-            res.push_back( (char) (nVal/16777216) );
-            res.push_back( (char) ( (nVal%16777216)/65536) );
-            res.push_back( (char) ( ((nVal%16777216)%65536)/256) );
-            res.push_back( (char) ( ((nVal%16777216)%65536)%256) );
-          }
-          n = root;
-        } else { break; }
+      if (n) {
+        if (n->leaf) {
+          if (n->val != UTF8_END) {
+            unsigned int nVal = n->val;
+            if (nVal < 256) { res.push_back( (char) nVal );}
+            else if (nVal < 65536) {
+              res.push_back( (char) (nVal/256) );
+              res.push_back( (char) (nVal%256) );
+            } else if (nVal < 16777216) {
+              res.push_back( (char) (nVal/65536) );
+              res.push_back( (char) ( (nVal%65536)/256) );
+              res.push_back( (char) ( (nVal%65536)%256) );
+            } else {
+              res.push_back( (char) (nVal/16777216) );
+              res.push_back( (char) ( (nVal%16777216)/65536) );
+              res.push_back( (char) ( ((nVal%16777216)%65536)/256) );
+              res.push_back( (char) ( ((nVal%16777216)%65536)%256) );
+            }
+            n = root;
+          } else { break; }
+        }
       }
-
       if (n == NULL || n->left == NULL || n->right == NULL) {
-        cout << "WTF!" << endl;
         throw -9;
       }
 
@@ -201,7 +200,6 @@ bool decompressFile ( const char * inFile, const char * outFile ) {
   if (input == NULL) {
     return false;
   }
-
   fseek(input, 0, SEEK_END);
   long fsize = ftell(input);
   fseek(input, 0, SEEK_SET);
@@ -210,10 +208,11 @@ bool decompressFile ( const char * inFile, const char * outFile ) {
   fclose (input);
   bitReader inputBits (allFile, fsize);
 
-  hTree * huffTree = new hTree (inputBits);
-
+  hTree * huffTree;
+  try { huffTree = new hTree (inputBits); }
+  catch (int e) { return false;}
   vector <unsigned char> out;
-  try { out = huffTree->eval(inputBits); }
+  try { out = huffTree->eval(inputBits);}
   catch (int e) { return false; }
 
   FILE * output = fopen(outFile, "wb");
