@@ -22,6 +22,8 @@ desc "Make the test"
 task :test => :build do
   del 'results'
   FileUtils.mkdir 'results'
+  sh 'touch ./results/no_write.in'
+  sh 'chmod -wx+r ./results/no_write.in'
   in_files = Dir.glob('tests/*.huf')
   out_files = Dir.glob('tests/*.in')
 
