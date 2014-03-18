@@ -207,19 +207,16 @@ bool decompressFile ( const char * inFile, const char * outFile ) {
   fread(allFile, fsize, 1, input);
   fclose (input);
   bitReader inputBits (allFile, fsize);
-
   hTree * huffTree;
   try { huffTree = new hTree (inputBits); }
   catch (int e) { return false;}
   vector <unsigned char> out;
   try { out = huffTree->eval(inputBits);}
   catch (int e) { return false; }
-
   FILE * output = fopen(outFile, "wb");
-  if (input == NULL) {
+  if (output == NULL) {
     return false;
   }
-
   fwrite (&out[0], sizeof(unsigned char), out.size(), output);
   fclose(output);
 
