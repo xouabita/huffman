@@ -17,9 +17,6 @@ unsigned int pow2(unsigned int a) {
 #define CHAR_SIZE sizeof(char)*8
 #define CPT pow2(CHAR_SIZE-1)
 
-#define UTF8_2   49152
-#define UTF8_3   14680064
-#define UTF8_4   4026531840
 #define UTF8_END 4103110784
 #define UTF8_INVALID -5
 
@@ -28,10 +25,8 @@ class bitReader {
   int cursor;
   unsigned char * file;
   long size;
-
-  public:
-  int maBite;
   long counter;
+  public:
 
   bitReader (unsigned char _file[], long _size) {
     file = _file;
@@ -39,7 +34,6 @@ class bitReader {
     counter = 0;
     actualByte = file[0];
     cursor = CPT*2;
-    maBite = 0;
   }
 
   unsigned int readBit() {
@@ -50,7 +44,6 @@ class bitReader {
       if (counter < size) { actualByte = file[counter]; cursor = CPT; }
       else { throw EOF; }
     }
-    maBite++;
     return (actualByte & cursor) / cursor;
   }
 
@@ -76,15 +69,44 @@ class hTree {
 
   hNode * root;
 
+  bool vb (unsigned int nb) {
+    if ((nb & 192) == 128 ) { return true; }
+    return false;
+  }
+
   unsigned int readUTF8 (bitReader &file) {
-    if (file.readBit() == 0) { return file.readBits(7); }
-    else if (file.readBits(2) == 2) { return ( file.readBits(13) + UTF8_2); }
-    else if (file.readBit() == 0) { return ( file.readBits(20) + UTF8_3 ); }
-    else  { return (file.readBits(28) + UTF8_4); }
+
+    unsigned int b1 = file.readBits(8);
+    if ((b1 & 128) == 0) { return b1; }
+    else if ((b1 & 224) == 192) {
+      unsigned int b2 = file.readBits(8);
+      if (vb(b2)) { return (b1 * 256 + b2); }
+    }
+    else if ((b1 & 240) == 224) {
+      unsigned int b2 = file.readBits(8);
+      unsigned int b3 = file.readBits(8);
+      if (vb(b2) && vb(b3)) {
+        return ( b1 * 65536 + b2 * 256 + b3 );
+      }
+    }
+    else if ((b1 & 248) == 240) {
+      unsigned int b2 = file.readBits(8);
+      unsigned int b3 = file.readBits(8);
+      unsigned int b4 = file.readBits(8);
+      unsigned int nb = b1 * 16777216 + b2 * 65536 + b3 * 256 + b4;
+      if (nb == UTF8_END || (vb(b2) && vb(b3) && vb(b4))) {
+        return nb;
+      }
+    }
+
+    throw UTF8_INVALID;
   }
 
   hNode * constructor (bitReader &file, bool nend) {
     unsigned int aBit = file.readBit();
+    // Debug ///////////////////
+     cout << "[" << aBit << "]";
+    ////////////////////////////
     hNode * n = new hNode;
     if (aBit == 0) {
       n->val   = 0;
@@ -95,6 +117,9 @@ class hTree {
     } else {
       n->leaf  = true;
       n->val   = readUTF8(file);
+      ///// Debug //////////////
+      cout << n->val << endl;
+      //////////////////////////
       n->left  = NULL;
       n->right = NULL;
       if (n->val == UTF8_END) { nend = false; }
@@ -110,6 +135,7 @@ class hTree {
     delete n;
   }
 
+// Debug //////////////////////////////////////
   void display (hNode * n) {
     cout << n->val << "|" << n->leaf << endl;
     if (!n->leaf) {
@@ -119,6 +145,7 @@ class hTree {
       display(n->right);
     }
   }
+///////////////////////////////////////////////
 
   public:
 
@@ -138,7 +165,6 @@ class hTree {
     vector <unsigned char> res;
 
     while (true) {
-      cout <<"["<<curs<<"]"<<endl;
       if (curs == 0) {
         n = n->left;
       } else {
@@ -148,7 +174,6 @@ class hTree {
       if (n->leaf) {
         if (n->val != UTF8_END) {
           unsigned int nVal = n->val;
-          cout << nVal << endl;
           if (nVal < 256) { res.push_back( (char) nVal );}
           else if (nVal < 65536) {
             res.push_back( (char) (nVal/256) );
@@ -175,18 +200,18 @@ class hTree {
       try {
         curs = file.readBit();
       } catch (int e) {
-        if (e == EOF) { break; }
+        if (e == EOF) { throw EOF; }
         else { cout << "Error: " << e << endl; break; }
       }
     }
 
     return res;
   }
-
+// Debug ///////////////
   void display () {
     display (root);
   }
-};
+}; /////////////////////
 
 bool compressFile ( const char * inFile, const char * outFile ) {
   return false;
@@ -200,12 +225,6 @@ bool decompressFile ( const char * inFile, const char * outFile ) {
     return false;
   }
 
-  FILE * output = fopen(outFile, "wb");
-  if (input == NULL) {
-    perror ( "Error when writing the file" );
-    return false;
-  }
-
   fseek(input, 0, SEEK_END);
   long fsize = ftell(input);
   fseek(input, 0, SEEK_SET);
@@ -213,14 +232,24 @@ bool decompressFile ( const char * inFile, const char * outFile ) {
   fread(allFile, fsize, 1, input);
   fclose (input);
   bitReader inputBits (allFile, fsize);
+
   hTree * huffTree = new hTree (inputBits);
 
-  vector <unsigned char> out = huffTree->eval(inputBits);
+  vector <unsigned char> out;
+  try { out = huffTree->eval(inputBits); }
+  catch (int e) { return false; }
+
+  FILE * output = fopen(outFile, "wb");
+  if (input == NULL) {
+    perror ( "Error when writing the file" );
+    return false;
+  }
+
   fwrite (&out[0], sizeof(unsigned char), out.size(), output);
   fclose(output);
+
   delete huffTree;
   delete [] allFile;
-
 
   return true;
 }
@@ -229,6 +258,7 @@ bool decompressFile ( const char * inFile, const char * outFile ) {
 int main ( int argc, char * argv [] ) {
 
   decompressFile(argv[1],argv[2]);
+
   return 0;
 }
 #endif
