@@ -104,9 +104,6 @@ class hTree {
 
   hNode * constructor (bitReader &file, bool nend) {
     unsigned int aBit = file.readBit();
-    // Debug ///////////////////
-     cout << "[" << aBit << "]";
-    ////////////////////////////
     hNode * n = new hNode;
     if (aBit == 0) {
       n->val   = 0;
@@ -117,9 +114,6 @@ class hTree {
     } else {
       n->leaf  = true;
       n->val   = readUTF8(file);
-      ///// Debug //////////////
-      cout << n->val << endl;
-      //////////////////////////
       n->left  = NULL;
       n->right = NULL;
       if (n->val == UTF8_END) { nend = false; }
@@ -134,18 +128,6 @@ class hTree {
 
     delete n;
   }
-
-// Debug //////////////////////////////////////
-  void display (hNode * n) {
-    cout << n->val << "|" << n->leaf << endl;
-    if (!n->leaf) {
-      cout << "l : ";
-      display(n->left);
-      cout << "r : ";
-      display(n->right);
-    }
-  }
-///////////////////////////////////////////////
 
   public:
 
@@ -207,11 +189,7 @@ class hTree {
 
     return res;
   }
-// Debug ///////////////
-  void display () {
-    display (root);
-  }
-}; /////////////////////
+};
 
 bool compressFile ( const char * inFile, const char * outFile ) {
   return false;
