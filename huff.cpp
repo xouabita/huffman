@@ -199,7 +199,6 @@ bool decompressFile ( const char * inFile, const char * outFile ) {
 
   FILE * input  = fopen(inFile , "rb");
   if (input == NULL) {
-    perror ( "Error when opening the file");
     return false;
   }
 
@@ -219,7 +218,6 @@ bool decompressFile ( const char * inFile, const char * outFile ) {
 
   FILE * output = fopen(outFile, "wb");
   if (input == NULL) {
-    perror ( "Error when writing the file" );
     return false;
   }
 
